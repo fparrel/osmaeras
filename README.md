@@ -6,15 +6,27 @@ Compute aeras and enghts from OpenStreetMap data
 ## Get osm data
 `wget http://download.geofabrik.de/europe/france/provence-alpes-cote-d-azur-latest.osm.pbf`
 
-## Convert borders
+## Install Rust + cargo
 ```
-wget https://svn.openstreetmap.org/applications/utils/osm-extract/polygons/ogr2poly.py
-chmod +x ogr2poly.py
-./ogr2poly.py -v parc_sophia_antipolis/parc_sophia_antipolis.shp # < gives error but creates file
+curl https://sh.rustup.rs -sSf | sh
+source $HOME/.cargo/env
 ```
 
+## Install osmosis
+TODO
+
+## Build way/aera extractor
+```
+cd osmextract
+cargo build --release
+cd ..
+```
+
+## Get border of the zone you want
+`./osmextract/target/release/osmextractfromname provence-alpes-cote-d-azur-latest.osm.pbf "Technopole de Sophia-Antipolis" > sophia.poly`
+
 ## Get a subset within borders
-`osmosis/bin/osmosis --read-pbf file="provence-alpes-cote-d-azur-latest.osm.pbf" --bounding-polygon file="parc_sophia_antipolis_0.poly" --write-xml file="sophia.osm"`
+`osmosis/bin/osmosis --read-pbf provence-alpes-cote-d-azur-latest.osm.pbf --bounding-polygon file="sophia.poly" completeWays=yes --write-xml file="sophia.osm"`
 
 ## Compute aeras and length
 `python comp.py`

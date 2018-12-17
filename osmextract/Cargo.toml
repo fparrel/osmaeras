@@ -1,0 +1,12 @@
+[package]
+name = "osmextractfromname"
+version = "0.1.0"
+authors = ["Frederic Parrel <fredericparrel@gmail.com>"]
+
+[dependencies]
+osmpbfreader="0.12.0"
+
+[[bin]]
+name = "osmextractfromname"
+path = "src/main.rs"
+
