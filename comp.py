@@ -1,5 +1,7 @@
 import xml.etree.ElementTree as ET
 from math import sin, cos, atan2, sqrt, pi, radians
+from shapely.geometry import Polygon
+from shapely.ops import cascaded_union
 
 data = ET.parse('sophia.osm')
 
@@ -45,16 +47,15 @@ def areaOfPolygon(p1):
         area += p[i][0] * (p[i+1][1] - p[i-1][1])
     return abs(area) / 2.0
 
-#paths = []
-#roads = []
 paths_len = 0.0
 roads_aera = 0.0
 roads_len = 0.0
 buildings = []
 built_zones = []
-vegetal = []
+forests = []
 golfs = []
-water = []
+lakes = []
+reservoirs = []
 farming = []
 fake_green = []
 rivers = []
@@ -92,20 +93,20 @@ for e in data.getroot():
 			buildings.append(path)
 		if tags.has_key('natural'):
 			if tags['natural'] in ('forest','wood','scrub'):
-				vegetal.append(path)
+				forests.append(path)
 			elif tags['natural']=='water':
-				water.append(path)
+				lakes.append(path)
 			else:
 				print tags['natural']
 		if tags.has_key('landuse'):
-			if tags['landuse'] in ('forest', 'meadow', 'farmyard', 'farmland', 'grass', 'orchard', 'village_green', 'recreation_ground'):
-				vegetal.append(path)
-                                if tags['landuse'] in ('farmyard', 'farmland', 'orchard'):
-                                    farming.append(path)
-                                if tags['landuse'] in ('village_green', 'recreation_ground'):
-                                    fake_green.append(path)
+			if tags['landuse'] in ('forest', 'meadow', 'grass'):
+				forests.append(path)
+                        elif tags['landuse'] in ('farmyard', 'farmland', 'orchard'):
+                                farming.append(path)
+                        elif tags['landuse'] in ('village_green', 'recreation_ground'):
+                                fake_green.append(path)
 			elif tags['landuse']=='basin':
-				water.append(path)
+				reservoirs.append(path)
 			elif tags['landuse'] in ('residential','commercial','industrial','construction','retail','quarry'):
 				built_zones.append(path)
 			else:
@@ -119,19 +120,50 @@ for e in data.getroot():
 		if tags.get('name')=="Technopole de Sophia-Antipolis":
 			bounds = path
 
+def unions(polygons):
+    return map(lambda x:list(x.exterior.coords),cascaded_union(map(lambda x:Polygon(x),polygons)).geoms)
+
+def withinUnionAera(polygons,polygon):
+    p = Polygon(reproject(polygon))
+    o = cascaded_union(map(lambda x:Polygon(reproject(x)).intersection(p),polygons))
+    return sum(map(lambda x:x.area,o))
+
+def areaOfPolygons(ps,bounds):
+    print sum(map(areaOfPolygon,ps))
+    print sum(map(areaOfPolygon,within(ps,bounds)))
+    return sum(map(areaOfPolygon,unions(ps)))
+
 if len(nd_not_found)>0:
     print 'WARNING: somes nodes were not found'
-print 'chemins et pistes = %d km'%(paths_len/1000.0)
-print 'routes = %d km %d ha'%(roads_len/1000.0,roads_aera/10000.0)
-print 'zones commerciales, industrielles, residentielles, batiments... = %d ha'%(sum(map(areaOfPolygon,built_zones))/10000.0)
-print '  dont batiments = %d ha'%(sum(map(areaOfPolygon,buildings))/10000.0)
-print '  dont parkings = %d ha'%(sum(map(areaOfPolygon,parkings))/10000.0)
-print 'foret, garrigue, golfs, espaces verts... = %d ha'%(sum(map(areaOfPolygon,vegetal))/10000.0)
-print '  dont golfs = %d ha'%(sum(map(areaOfPolygon,golfs))/10000.0)
-print '  dont agricole = %d ha'%(sum(map(areaOfPolygon,farming))/10000.0)
-print '  dont espaces verts = %d ha'%(sum(map(areaOfPolygon,fake_green))/10000.0)
-print 'eau (lacs, etangs, reservoirs), hors rivieres = %d ha'%(sum(map(areaOfPolygon,water))/10000.0)
-print 'rivieres et canaux = %d km'%(sum(map(lenOfPath,rivers))/1000.0)
+
+print 'Lineaire:'
+print
+print '  chemins et pistes = %d km'%(paths_len/1000.0)
+print '  rivieres et canaux = %d km'%(sum(map(lenOfPath,rivers))/1000.0)
+print
+print '  routes = %d km %d ha'%(roads_len/1000.0,roads_aera/10000.0)
+print
+print 'Superficies:'
+print
+print '  Urbanisation: %d ha' % (withinUnionAera(built_zones+buildings+parkings,bounds)/10000.0)
+print '    dont batiments = %d ha'%(withinUnionAera(buildings,bounds)/10000.0)
+print '    dont parkings = %d ha'%(withinUnionAera(parkings,bounds)/10000.0)
+print
+print '  Espaces verts artificiels: %d ha' % (withinUnionAera(fake_green+golfs+farming+reservoirs,bounds)/10000.0)
+print '    dont golfs = %d ha'%(withinUnionAera(golfs,bounds)/10000.0)
+print '    dont agricole = %d ha'%(withinUnionAera(farming,bounds)/10000.0)
+print '    dont espaces verts = %d ha'%(withinUnionAera(fake_green,bounds)/10000.0)
+print '    dont reservoirs = %d ha'%(withinUnionAera(reservoirs,bounds)/10000.0)
+print
+print '  Espaces naturels = %d ha'%(withinUnionAera(forests+lakes,bounds)/10000.0)
+print '    dont foret, garrigue, prairie = %d ha'%(withinUnionAera(forests,bounds)/10000.0)
+print '    dont eau (lacs, etangs), hors rivieres etroites = %d ha'%(withinUnionAera(lakes,bounds)/10000.0)
 print
 print 'superficie totale = %d ha'%(areaOfPolygon(bounds)/10000.0)
+print 'superficie totale identifiee = %d ha'%(withinUnionAera(built_zones+buildings+parkings+fake_green+golfs+farming+reservoirs+forests+lakes,bounds)/10000.0)
+
+#TODO: routes a compter dans urbanisation
+#TODO: restreindre les donnees lineaiares a l'interieur de sophia
+#TODO: donner une largeur aux rivieres?
+
 
