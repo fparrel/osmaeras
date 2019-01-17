@@ -7,45 +7,45 @@ data = ET.parse('sophia.osm')
 
 nodes = {}
 for e in data.getroot():
-	if e.tag=='node':
-		nodes[e.attrib['id']] = float(e.attrib['lat']),float(e.attrib['lon'])
+  if e.tag=='node':
+    nodes[e.attrib['id']] = float(e.attrib['lat']),float(e.attrib['lon'])
 
 def GeodeticDistGreatCircle(lat1,lon1,lat2,lon2):
-	"Compute distance between two points of the earth geoid (approximated to a sphere)"
-	# convert inputs in degrees to radians
-	lat1 = lat1 * 0.0174532925199433
-	lon1 = lon1 * 0.0174532925199433
-	lat2 = lat2 * 0.0174532925199433
-	lon2 = lon2 * 0.0174532925199433
-	# just draw a schema of two points on a sphere and two radius and you'll understand
-	a = sin((lat2 - lat1)/2)**2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1)/2)**2
-	c = 2 * atan2(sqrt(a), sqrt(1-a))
-	# earth mean radius is 6371 km
-	return 6372795.0 * c
+  "Compute distance between two points of the earth geoid (approximated to a sphere)"
+  # convert inputs in degrees to radians
+  lat1 = lat1 * 0.0174532925199433
+  lon1 = lon1 * 0.0174532925199433
+  lat2 = lat2 * 0.0174532925199433
+  lon2 = lon2 * 0.0174532925199433
+  # just draw a schema of two points on a sphere and two radius and you'll understand
+  a = sin((lat2 - lat1)/2)**2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1)/2)**2
+  c = 2 * atan2(sqrt(a), sqrt(1-a))
+  # earth mean radius is 6371 km
+  return 6372795.0 * c
 
 def lenOfPath(path):
-	l = 0.0
-	for i in range(1,len(path)):
-		l += GeodeticDistGreatCircle(path[i-1][0],path[i-1][1],path[i][0],path[i][1])
-	return l
+  l = 0.0
+  for i in range(1,len(path)):
+    l += GeodeticDistGreatCircle(path[i-1][0],path[i-1][1],path[i][0],path[i][1])
+  return l
 
 def reproject(p):
-	"""Returns the x & y coordinates in meters using a sinusoidal projection"""
-	earth_radius = 6371009 # in meters
-	lat_dist = pi * earth_radius / 180.0
-	y = [pt[0] * lat_dist for pt in p]
-	x = [pt[1] * lat_dist * cos(radians(pt[0])) for pt in p]
-	return zip(x, y)
+  """Returns the x & y coordinates in meters using a sinusoidal projection"""
+  earth_radius = 6371009 # in meters
+  lat_dist = pi * earth_radius / 180.0
+  y = [pt[0] * lat_dist for pt in p]
+  x = [pt[1] * lat_dist * cos(radians(pt[0])) for pt in p]
+  return zip(x, y)
 
 def areaOfPolygon(p1):
-    """Calculates the area of an arbitrary polygon given its verticies"""
-    p = reproject(p1)
-    area = 0.0
-    if len(p)==1:
-        return 0.0
-    for i in range(-1, len(p)-1):
-        area += p[i][0] * (p[i+1][1] - p[i-1][1])
-    return abs(area) / 2.0
+  """Calculates the area of an arbitrary polygon given its verticies"""
+  p = reproject(p1)
+  area = 0.0
+  if len(p)==1:
+    return 0.0
+  for i in range(-1, len(p)-1):
+    area += p[i][0] * (p[i+1][1] - p[i-1][1])
+  return abs(area) / 2.0
 
 paths_len = 0.0
 roads_aera = 0.0
@@ -121,20 +121,20 @@ for e in data.getroot():
 			bounds = path
 
 def unions(polygons):
-    return map(lambda x:list(x.exterior.coords),cascaded_union(map(lambda x:Polygon(x),polygons)).geoms)
+  return map(lambda x:list(x.exterior.coords),cascaded_union(map(lambda x:Polygon(x),polygons)).geoms)
 
 def withinUnionAera(polygons,polygon):
-    p = Polygon(reproject(polygon))
-    o = cascaded_union(map(lambda x:Polygon(reproject(x)).intersection(p),polygons))
-    return sum(map(lambda x:x.area,o))
+  p = Polygon(reproject(polygon))
+  o = cascaded_union(map(lambda x:Polygon(reproject(x)).intersection(p),polygons))
+  return sum(map(lambda x:x.area,o))
 
 def areaOfPolygons(ps,bounds):
-    print sum(map(areaOfPolygon,ps))
-    print sum(map(areaOfPolygon,within(ps,bounds)))
-    return sum(map(areaOfPolygon,unions(ps)))
+  print sum(map(areaOfPolygon,ps))
+  print sum(map(areaOfPolygon,within(ps,bounds)))
+  return sum(map(areaOfPolygon,unions(ps)))
 
 if len(nd_not_found)>0:
-    print 'WARNING: somes nodes were not found'
+  print 'WARNING: somes nodes were not found'
 
 print 'Lineaire:'
 print
