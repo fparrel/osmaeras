@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from math import sin, cos, atan2, sqrt, pi, radians
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, LineString
 from shapely.ops import cascaded_union
 
 data = ET.parse('sophia.osm')
@@ -29,6 +29,22 @@ def lenOfPath(path):
     l += GeodeticDistGreatCircle(path[i-1][0],path[i-1][1],path[i][0],path[i][1])
   return l
 
+def lenOfPathWithin(path,bounds):
+  l = LineString(reproject(path))
+  bounds = Polygon(reproject(bounds))
+  l.intersection(bounds)
+  return l.length
+
+def lenOfPathWithinPolygon(path,bounds):
+  l = LineString(reproject(path))
+  l.intersection(bounds)
+  return l.length
+
+
+#  l = 0.0
+#  for i in range(1,len(path)):
+#    Line(path[i-1][0],path[i-1][1],path[i][0],path[i][1])
+
 def reproject(p):
   """Returns the x & y coordinates in meters using a sinusoidal projection"""
   earth_radius = 6371009 # in meters
@@ -50,6 +66,8 @@ def areaOfPolygon(p1):
 paths_len = 0.0
 roads_aera = 0.0
 roads_len = 0.0
+paths = []
+roads = []
 buildings = []
 built_zones = []
 forests = []
@@ -62,71 +80,75 @@ rivers = []
 parkings = []
 nd_not_found = []
 for e in data.getroot():
-	if e.tag=='way':
-		path = []
-		tags = {}
-		for i in e:
-			if i.tag=='nd':
-				if nodes.has_key(i.attrib['ref']):
-					path.append(nodes[i.attrib['ref']])
-				else:
-					nd_not_found.append(i.attrib['ref'])
-			if i.tag=='tag':
-				tags[i.attrib['k']] = i.attrib['v']
-		if tags.has_key('highway'):
-			if tags['highway'] in ('path','track','steps','bridleway','footway','cycleway'):
-				#paths.append(path)
-                                paths_len += lenOfPath(path)
-			else:
-				#roads.append(path)
-                                if tags.has_key('lanes'):
-                                    # Lanes present => compute width
-                                    width = int(tags['lanes'])*3.0
-                                elif tags.has_key('oneway'):
-                                    width = 3.0
-                                else:
-                                    width = 6.0
-                                l = lenOfPath(path)
-                                roads_aera += l * width
-                                roads_len += l
-		if tags.has_key('building'):
-			buildings.append(path)
-		if tags.has_key('natural'):
-			if tags['natural'] in ('forest','wood','scrub'):
-				forests.append(path)
-			elif tags['natural']=='water':
-				lakes.append(path)
-			else:
-				print tags['natural']
-		if tags.has_key('landuse'):
-			if tags['landuse'] in ('forest', 'meadow', 'grass'):
-				forests.append(path)
-                        elif tags['landuse'] in ('farmyard', 'farmland', 'orchard'):
-                                farming.append(path)
-                        elif tags['landuse'] in ('village_green', 'recreation_ground'):
-                                fake_green.append(path)
-			elif tags['landuse']=='basin':
-				reservoirs.append(path)
-			elif tags['landuse'] in ('residential','commercial','industrial','construction','retail','quarry'):
-				built_zones.append(path)
-			else:
-				print tags['landuse']
-                if tags.get('leisure')=='golf_course':
-                        golfs.append(path)
-                if tags.has_key('waterway'):
-                        rivers.append(path)
-                if tags.get('amenity')=='parking' or tags.get('landuse')=='garages':
-                        parkings.append(path)
-		if tags.get('name')=="Technopole de Sophia-Antipolis":
-			bounds = path
+  if e.tag=='way':
+    path = []
+    tags = {}
+    for i in e:
+      if i.tag=='nd':
+        if nodes.has_key(i.attrib['ref']):
+          path.append(nodes[i.attrib['ref']])
+        else:
+          nd_not_found.append(i.attrib['ref'])
+      if i.tag=='tag':
+        tags[i.attrib['k']] = i.attrib['v']
+    if tags.has_key('highway'):
+      if tags['highway'] in ('path','track','steps','bridleway','footway','cycleway'):
+        paths.append(path)
+        paths_len += lenOfPath(path)
+      else:
+        roads.append(path)
+        if tags.has_key('lanes'):
+          # Lanes present => compute width
+          width = int(tags['lanes'])*3.0
+        elif tags.has_key('oneway'):
+          width = 3.0
+        else:
+          width = 6.0
+        l = lenOfPath(path)
+        roads_aera += l * width
+        roads_len += l
+    if tags.has_key('building'):
+      buildings.append(path)
+    if tags.has_key('natural'):
+      if tags['natural'] in ('forest','wood','scrub'):
+        forests.append(path)
+      elif tags['natural']=='water':
+        lakes.append(path)
+      else:
+        print tags['natural']
+    if tags.has_key('landuse'):
+      if tags['landuse'] in ('forest', 'meadow', 'grass'):
+        forests.append(path)
+      elif tags['landuse'] in ('farmyard', 'farmland', 'orchard'):
+        farming.append(path)
+      elif tags['landuse'] in ('village_green', 'recreation_ground'):
+        fake_green.append(path)
+      elif tags['landuse']=='basin':
+        reservoirs.append(path)
+      elif tags['landuse'] in ('residential','commercial','industrial','construction','retail','quarry'):
+        built_zones.append(path)
+      else:
+        print tags['landuse']
+    if tags.get('leisure')=='golf_course':
+      golfs.append(path)
+    if tags.has_key('waterway'):
+      rivers.append(path)
+    if tags.get('amenity')=='parking' or tags.get('landuse')=='garages':
+      parkings.append(path)
+    if tags.get('name')=="Technopole de Sophia-Antipolis":
+      bounds = path
 
 def unions(polygons):
   return map(lambda x:list(x.exterior.coords),cascaded_union(map(lambda x:Polygon(x),polygons)).geoms)
 
-def withinUnionAera(polygons,polygon):
-  p = Polygon(reproject(polygon))
-  o = cascaded_union(map(lambda x:Polygon(reproject(x)).intersection(p),polygons))
-  return sum(map(lambda x:x.area,o))
+def withinUnion(polygons, bounds):
+  b = Polygon(reproject(bounds))
+  u = cascaded_union(map(lambda x:Polygon(reproject(x)).intersection(b),polygons))
+  return u
+
+def withinUnionAera(polygons, bounds):
+  u = withinUnion(polygons, bounds)
+  return sum(map(lambda x:x.area,u))
 
 def areaOfPolygons(ps,bounds):
   print sum(map(areaOfPolygon,ps))
@@ -136,9 +158,22 @@ def areaOfPolygons(ps,bounds):
 if len(nd_not_found)>0:
   print 'WARNING: somes nodes were not found'
 
+paths_len2 = 0.0
+for path in paths:
+  paths_len2 += lenOfPathWithin(path,bounds)
+
+urbanisation = withinUnion(built_zones+buildings+parkings,bounds)
+roads_len2 = 0.0
+for road in roads:
+  roads_len2 += lenOfPathWithinPolygon(road,urbanisation)
+
+print 'Correction des erreurs (a ignorer si moins d\'un kilometre)'
+print '  Chemins hors frontieres = %d m'%(paths_len-paths_len2)
+print '  Routes hors urbanisation= %d m'%(roads_len-roads_len2)
+print
 print 'Lineaire:'
 print
-print '  chemins et pistes = %d km'%(paths_len/1000.0)
+print '  chemins et pistes = %d km'%(paths_len2/1000.0)
 print '  rivieres et canaux = %d km'%(sum(map(lenOfPath,rivers))/1000.0)
 print
 print '  routes = %d km %d ha'%(roads_len/1000.0,roads_aera/10000.0)

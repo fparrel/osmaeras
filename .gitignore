@@ -1,0 +1,11 @@
+
+# Rust binaries
+osmextract/target
+
+# Input Data files
+*.osm.pbf
+*.osm
+
+# Generated data files
+*.poly
+
