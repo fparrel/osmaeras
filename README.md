@@ -44,6 +44,9 @@ cd ..
 ### Compute aeras and length
 `python comp.py`
 
+### Convert geojson to kml
+`python geojson2kml.py zonessophia.geojson`
+
 ## Last results
 
 OSM Data timestamp from geofabrik: 2019-01-30T21:14:05Z
@@ -80,3 +83,21 @@ Superficies:
 
 superficie totale = 2400 ha
 
+## Démarche suivie
+
+Etapes en format latitude, longitude décimale (précision: nanodregrés):
+
+Le fichier correspondant à la Zone PACA est récupéré sur le serveur http://geofabrik.de Ce fichier fige les données OpenStreetMap (http://openstreetmaps.org) à un instant donné (habituellement la veilla au soir). Un programme codé en Rust permet d'extraire le polygone représentant les limites de la Technopole Sophia-Antipolis de ce fichier. J'ai choisi d'utiliser un code compilé choisi pour la vitesse d'exécution. Ensuite l'outil osmosis permet d'extraire tous les points inclus dans ce polygone ainsi que leurs dépendances (donc on obtient également des points extérieurs à la technopole via ce système de dépendences).
+
+Etapes en coordonnés metriques (x, y en mètres):
+
+Le fichier représentant les données OSM relatives à Sophia-Antipolis est ensuite analysé. Une projection sinusoïdale (https://fr.wikipedia.org/wiki/Projection_sinuso%C3%AFdale) permet de convertir les latitudes longitudes en mètres, afin de pouvoir calculer les superficies et distances par méthode euclidienne. La projection sinusoïdale a la propriété de conserver les superficies (en revanche on perd de la précision sur les distances qui nous importent moins). Nous choisissons un rayon terrestre de 6371009m, rayon moyen donc assez précis autour des latitudes voisines de 45 degrés. Cette projection est faite via la librarie pyproj/PROJ4 (https://proj4.org/).
+Chaque polygone (`way` fermé chez OSM) et multipolygone (`relation[type=multipolygon]` contenant deux listes de polygones: les exterieurs et les intérieurs ("trous")), est converti en objet géométrique de la librairie Shapely (https://github.com/Toblerity/Shapely), puis placé dans la sous-catégorie correspondante. Pour les routes on utilise la librarie Shapely pour leur donner une épaisseur. On utilise le tag `width` lorsqu'il est renseigné sur OSM, sinon on compte 3m par voie lorsque le nombre de voies est renseigné, et 6m par defaut lorsque rien n'est renseigné.
+Les objets de la même sous-catégorie sont ensuite unis (pour éviter les doubles comptages par exemple un maison sur une zone résidentielle), et intersectés avec les limites de Sophia-Antipolis (car du fait du système de dépendances on peut obtenir des points en dehors de ces limites).
+Les sous-catégories sont regroupées en catégories (par union également toujours pour éviter les doubles comptages).
+Les zones urbaines sont enlevées des zones naturelles et des espaces verts (exemple: pour les routes dans les parcs et forêts), et les zones naturelles sont enlevées des espaces verts (pour les bois encalvés dans le parcs).
+La librairies Shapely calcule les surfaces et distances totales.
+
+Etapes en format latitude, longitude décimale:
+
+Ensuite chaque objet géométrique Shapely de type polygone ou multipolygone est reconverti en latitude longitude, puis exporté au format geojson (http://geojson.org/) avec les zones colorées en gris, jaune ou vert, afin de pouvoir vérifier visuellement la pertinence des résultats. On converti également au format .kml pour une intégration dans google maps.
