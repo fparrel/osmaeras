@@ -5,16 +5,18 @@ Compute aeras and lenghts from OpenStreetMap data
 ## Step-by-step
 
 ### Get osm data
-`wget http://download.geofabrik.de/europe/france/provence-alpes-cote-d-azur-latest.osm.pbf`
+```sh
+wget http://download.geofabrik.de/europe/france/provence-alpes-cote-d-azur-latest.osm.pbf
+```
 
 ### Install Rust + cargo
-```
+```sh
 curl https://sh.rustup.rs -sSf | sh
 source $HOME/.cargo/env
 ```
 
 ### Install osmosis
-```
+```sh
 wget https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-latest.tgz
 mkdir osmosis
 mv osmosis-latest.tgz osmosis
@@ -25,30 +27,41 @@ chmod a+x bin/osmosis
 ```
 
 ### Install python dependencies
-`sudo pip install shapely pyproj geopandas`
+```sh
+sudo pip install shapely pyproj geopandas
+```
 
 ### Build way/aera extractor
-```
+```sh
 cd osmextract
 cargo build --release
 cd ..
 ```
 
 ### Get border of the zone you want
-`./osmextract/target/release/osmextractfromname provence-alpes-cote-d-azur-latest.osm.pbf "Technopole de Sophia-Antipolis" > sophia.poly`
-(2-3 minutes)
+```sh
+./osmextract/target/release/osmextractfromname provence-alpes-cote-d-azur-latest.osm.pbf "Technopole de Sophia-Antipolis" > sophia.poly
+```
+(lasts 2-3 minutes)
 
 ### Get a subset within borders
-`osmosis/bin/osmosis --read-pbf provence-alpes-cote-d-azur-latest.osm.pbf --bounding-polygon file="sophia.poly" completeRelations=yes --write-xml file="sophia.osm"`
+```sh
+osmosis/bin/osmosis --read-pbf provence-alpes-cote-d-azur-latest.osm.pbf --bounding-polygon file="sophia.poly" completeRelations=yes --write-xml file="sophia.osm"
+```
 
 ### Compute aeras and length
-`python comp.py`
+```sh
+python comp.py
+```
 
 ### Convert geojson to kml
-`python geojson2kml.py zonessophia.geojson`
+```sh
+./geojson2kml.py zonessophia.geojson
+```
 
 ## Last results
 
+```
 OSM Data timestamp from geofabrik: 2019-01-30T21:14:05Z
 
 Lineaire:
@@ -82,6 +95,7 @@ Superficies:
   Non identifiee = 147 ha (6.1%)
 
 superficie totale = 2400 ha
+```
 
 ## Démarche suivie
 
@@ -98,6 +112,6 @@ Les sous-catégories sont regroupées en catégories (par union également toujo
 Les zones urbaines sont enlevées des zones naturelles et des espaces verts (exemple: pour les routes dans les parcs et forêts), et les zones naturelles sont enlevées des espaces verts (pour les bois encalvés dans le parcs).
 La librairies Shapely calcule les surfaces et distances totales.
 
-Etapes en format latitude, longitude décimale:
+Etapes de nouveau en format latitude, longitude décimale:
 
 Ensuite chaque objet géométrique Shapely de type polygone ou multipolygone est reconverti en latitude longitude, puis exporté au format geojson (http://geojson.org/) avec les zones colorées en gris, jaune ou vert, afin de pouvoir vérifier visuellement la pertinence des résultats. On converti également au format .kml pour une intégration dans google maps.
