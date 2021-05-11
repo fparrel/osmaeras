@@ -17,25 +17,26 @@ source $HOME/.cargo/env
 
 ### Install osmosis
 ```sh
-wget https://bretth.dev.openstreetmap.org/osmosis-build/osmosis-latest.tgz
-mkdir osmosis
-mv osmosis-latest.tgz osmosis
-cd osmosis
-tar xvfz osmosis-latest.tgz
-rm osmosis-latest.tgz
+mkdir -p osmosis
+pushd osmosis
+wget https://github.com/openstreetmap/osmosis/releases/download/0.48.3/osmosis-0.48.3.tgz  
+tar xvfz osmosis-*.tgz
+rm osmosis-*.tgz
 chmod a+x bin/osmosis
+popd
 ```
 
 ### Install python dependencies
 ```sh
-sudo pip install shapely pyproj geopandas
+pip install shapely pyproj geopandas pytz
 ```
+PS: you may need to `sudo`. In this case check that modules are imported for your user.
 
 ### Build way/aera extractor
 ```sh
-cd osmextract
+pushd osmextract
 cargo build --release
-cd ..
+popd
 ```
 
 ### Get border of the zone you want
