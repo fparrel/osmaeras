@@ -7,6 +7,7 @@ import pyproj
 from functools import partial
 import geopandas
 import json
+from sys import stdout
 
 def GeodeticDistGreatCircle(lat1,lon1,lat2,lon2):
   """Compute distance between two points of the earth geoid (approximated to a sphere)"""
@@ -40,8 +41,7 @@ def lenOfPathWithinPolygon(path,boundsshapely):
 
 def reproject(p):
   """Returns the x & y coordinates in meters using a sinusoidal projection"""
-  out = [pyproj.transform(proj_latlon,proj4area,pt[1],pt[0]) for pt in p]
-  return out
+  return map(lambda pt: pyproj.transform(proj_latlon,proj4area,pt[1],pt[0]), p)
 
 def areaOfPolygon(p1):
   """Calculates the area of an arbitrary polygon given its verticies"""
@@ -122,7 +122,11 @@ riverlines = []
 parkings = []
 quarries = []
 nd_not_found = []
+nbnodes = 0
+nbnodestotal = len(data.getroot())
 for e in data.getroot():
+  nbnodes += 1
+  stdout.write('\r%d / %d nodes' % (nbnodes,nbnodestotal))
   tags = {}
   geom = None
   if e.tag=='way':
@@ -198,20 +202,22 @@ for e in data.getroot():
     if tags.get('power')=='plant':
       buildings.append(geom)
     if tags.has_key('natural'):
-      if tags['natural'] in ('forest','wood','scrub'):
+      if tags['natural'] in ('forest','wood','scrub','heath'):
         forests.append(geom)
       elif tags['natural']=='water':
         lakes.append(geom)
       elif tags['natural'] in ('coastline','ridge'):
         pass # ignore
+      elif tags['natural']=='sand':
+        quarries.append(geom) #TODO: quarries = quarries + natural mineral
       else:
         raise Exception('unknow value for tag natural: %s' % tags['natural'])
     if tags.has_key('landuse'):
-      if tags['landuse'] in ('forest', 'meadow', 'grass'):
+      if tags['landuse'] in ('forest', 'meadow', 'grass', 'frass'):
         forests.append(geom)
       elif tags['landuse'] in ('farmyard', 'farmland', 'orchard'):
         farming.append(geom)
-      elif tags['landuse'] in ('village_green', 'recreation_ground'):
+      elif tags['landuse'] in ('village_green', 'recreation_ground', 'flowerbed'):
         fake_green.append(geom)
       elif tags['landuse']=='basin':
         reservoirs.append(geom)
@@ -238,6 +244,8 @@ for e in data.getroot():
       parkings.append(geom)
     if tags.get('name')=="Technopole de Sophia-Antipolis":
       bounds = geom
+
+print('')
 
 if len(nd_not_found)>0:
   print('WARNING: %d nodes were not found'%len(nd_not_found))
