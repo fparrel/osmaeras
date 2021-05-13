@@ -63,37 +63,37 @@ python comp.py
 ## Last results
 
 ```
-OSM Data timestamp from geofabrik: 2019-01-30T21:14:05Z
+OSM Data timestamp from geofabrik: 2021-05-11
 
 Lineaire:
 
-  chemins et pistes = 246.8 km
-  rivieres et canaux = 29.5 km
-  routes = 197.6 km
+  chemins et pistes = 263.9 km
+  rivieres et canaux = 30.4 km
+  routes = 212.7 km
 
 Superficies:
 
-  Urbanisation = 653 ha (27.2%)
-    dont mineral = 260 ha (10.8%)
-      dont batiments = 110 ha (4.6%)
-      dont parkings = 36 ha (1.5%)
-      dont routes = 110 ha (4.6%)
+  Urbanisation = 669 ha (27.9%)
+    dont mineral = 273 ha (11.4%)
+      dont batiments = 112 ha (4.6%)
+      dont parkings = 39 ha (1.6%)
+      dont routes = 119 ha (5.0%)
       dont mines = 11 ha (0.5%)
-      dont terrains de sport sans pelouse = 8 ha (0.3%)
-    dont zones autour des batiments = 392 ha (16.3%)
+      dont terrains de sport sans pelouse = 9 ha (0.4%)
+    dont zones autour des batiments = 396 ha (16.5%)
 
-  Espaces verts artificiels = 103 ha (4.3%)
-    dont golfs = 84.3 ha (3.5%)
+  Espaces verts artificiels = 96 ha (4.0%)
+    dont golfs = 83.9 ha (3.5%)
     dont agricole = 5.6 ha (0.2%)
-    dont espaces verts = 26.1 ha (1.1%)
-    dont reservoirs et piscines = 0.7 ha (0.0%)
-    dont terrains de sport avec pelouse (hors golf) = 5.1 ha (0.2%)
+    dont espaces verts = 26.2 ha (1.1%)
+    dont reservoirs et piscines = 0.6 ha (0.0%)
+    dont terrains de sport avec pelouse (hors golf) = 3.6 ha (0.1%)
 
-  Espaces naturels = 1498 ha (62.4%)
-    dont foret, garrigue, prairie = 1536 ha (64.0%)
+  Espaces naturels = 1508 ha (62.8%)
+    dont foret, garrigue, prairie = 1554 ha (64.7%)
     dont eau (lacs, etangs), hors rivieres etroites = 2 ha (0.1%)
 
-  Non identifiee = 147 ha (6.1%)
+  Non identifiee = 127 ha (5.3%)
 
 superficie totale = 2400 ha
 ```
